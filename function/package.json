@@ -1,0 +1,28 @@
+{
+  "name": "overwatch-s3-es-reader",
+  "version": "1.0.0",
+  "description": "Reads files from s3 bucket and pushed to elasticsearch",
+  "main": "index.js",
+  "scripts": {
+    "test": "ELASTICSEARCH_URL=estest.eu-west-1.es.amazonaws.com ELASTICSEARCH_INDEX=esindextest ELASTICSEARCH_DOCTYPE=fastlylogs ./node_modules/jasmine/bin/jasmine.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dwtechnologies/s3-elasticsearch.git"
+  },
+  "keywords": [
+    "aws",
+    "s3",
+    "es"
+  ],
+  "author": "Patrik Antonsson",
+  "license": "MIT",
+  "homepage": "https://github.com/dwtechnologies/s3-elasticsearch.git",
+  "dependencies": {
+    "byline": "^5.0.0"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.33.0",
+    "jasmine": "^2.5.3"
+  }
+}

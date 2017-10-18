@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Package with resources for subscribing to a s3 bucket with logs (APACHE) for further sending to elasticsearch.
+Parameters:
+  ResourceContext:
+    Type: String
+    Default: demo_v1
+    Description: The context that resources will be suffixed with
+  ElasticSearchURL:
+    Type: String
+    Default: xxx
+    Description: Elasticsearch URL
+  ElasticSearchIndex:
+    Type: String
+    Default: xxx
+    Description: Elasticsearch Index Name
+  ElasticSearchDocType:
+    Type: String
+    Default: xxx
+    Description: Elasticsearch Index Name
+Resources:
+  S3LogsToElasticsearchRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "logs.eu-west-1.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "S3LogsToElasticsearchRole" #Policy to let role invoke lambda function
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource: "arn:aws:logs:*:*:*"
+          -
+            Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Join [ "", ["arn:aws:lambda:", !Ref "AWS::Region", ":*:function:overwatch-s3-es-reader-", !Ref "ResourceContext"]]
+          -
+            Effect: "Allow"
+            Action:
+              - "es:ESHttpPost"
+            Resource:
+              - "arn:aws:es:*:*:*"
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - "arn:aws:s3:::kc-data-repository/lambda/s3essubscriber/*"
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - "arn:aws:s3:::kc-fastly-logs/*"
+      Roles:
+        -
+          Ref: "S3LogsToElasticsearchRole"
+  #################################
+  # LAMBDA Resource
+  #################################
+  CloudwatchApacheToElasticsearchLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: !Join [ "",["overwatch-s3-es-reader-", !Ref "ResourceContext"]]
+      Handler: "index.handler"
+      Description: "Lambda function to listen to cloudwatch events and push to Elasticsearch"
+      Environment:
+        Variables:
+          ELASTICSEARCH_URL: !Ref ElasticSearchURL
+          ELASTICSEARCH_INDEX: !Ref ElasticSearchIndex
+          ELASTICSEARCH_DOCTYPE: !Ref ElasticSearchDocType
+      Role: !GetAtt S3LogsToElasticsearchRole.Arn
+      Code: "function"
+      MemorySize: 512
+      Runtime: "nodejs6.10"
+      Timeout: "30"
